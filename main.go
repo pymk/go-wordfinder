@@ -15,19 +15,13 @@ type SearchConfig struct {
 }
 
 type SearchResult struct {
-	LineNumber int
-	Line       string
+	LineNumber  int
+	CurrentLine string
 }
 
 func searchWord(filePath, searchTerm string, config SearchConfig) ([]SearchResult, error) {
 	if searchTerm == "" {
 		return nil, nil
-	}
-
-	// Compile pattern once before scanning.
-	compiledPattern, err := buildSearchPattern(searchTerm, config)
-	if err != nil {
-		return nil, fmt.Errorf("invalid search pattern: %w", err)
 	}
 
 	file, err := os.Open(filePath)
@@ -38,13 +32,17 @@ func searchWord(filePath, searchTerm string, config SearchConfig) ([]SearchResul
 
 	scanner := bufio.NewScanner(file)
 	result := make([]SearchResult, 0)
+	compiledPattern, err := buildSearchPattern(searchTerm, config)
+	if err != nil {
+		return nil, fmt.Errorf("invalid search pattern: %w", err)
+	}
 
-	for lineNumber := 0; scanner.Scan(); lineNumber++ {
+	for lineNumber := 1; scanner.Scan(); lineNumber++ {
 		currentLine := scanner.Text()
 		if compiledPattern.MatchString(currentLine) {
 			result = append(result, SearchResult{
-				LineNumber: lineNumber + 1, // Make line number 1-based
-				Line:       currentLine,
+				LineNumber:  lineNumber,
+				CurrentLine: currentLine,
 			})
 		}
 	}
@@ -75,7 +73,7 @@ func printResults(results []SearchResult) {
 	}
 
 	for _, result := range results {
-		fmt.Printf("%6d: %s\n", result.LineNumber, result.Line)
+		fmt.Printf("%6d: %s\n", result.LineNumber, result.CurrentLine)
 	}
 }
 
